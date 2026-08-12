@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Add Quote - SYQ</title>
+        <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
+        <style> 
+            body { 
+                margin: 0; 
+                padding: 15px; 
+                font-family: 'Times New Roman', Times, serif; 
+                background-color: #fafafa;
+            }
+            #header-container { 
+                display: flex; 
+                align-items: center; 
+                justify-content: space-between; 
+                font-family: 'Times New Roman', Times, serif; 
+                gap: 15px;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            .logo-title-box { display: flex; align-items: center; gap: 15px; }
+            #logo { width: 50px; height: auto; }
+            #header-link { text-decoration: none; color: black; }
+            #header-link h1 { margin: 0; font-size: 26px; }
+            #setting { width: 28px; height: 28px; cursor: pointer; }
+            hr { margin: 15px auto; border: 0; border-top: 1px solid #ddd; }
+            
+            #formContainer {
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            #quote { width: 100%; max-width: 500px; height: 150px; padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; font-family: 'Times New Roman', Times, serif; }
+            #ref { width: 100%; max-width: 300px; height: 30px; padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Times New Roman', Times, serif; }
+            .btn { padding: 8px 16px; cursor: pointer; font-weight: bold; border-radius: 5px; border: 1px solid black; font-family: 'Times New Roman', Times, serif; }
+        </style>
+    </head>
+    <body>
+        <div id="page">
+            <div id="header-container">
+                <div class="logo-title-box">
+                    <a href="mainPage.html"><img id="logo" src="quote-icon-logo-design-template-vector.webp" alt="Logo"></a>
+                    <a id="header-link" href="mainPage.html"><h1>Share Your Quotes</h1></a>
+                </div>
+                <a href="settingpage.html"><img id="setting" src="settings.png" alt="Settings"></a>
+            </div>
+            <hr>
+        </div>
+        <br>
+        
+        <div id="formContainer">
+            <form id="quoteForm">
+                <textarea id="quote" placeholder="Enter your quote..." required></textarea>
+                <br><br>
+                Enter the reference:
+                <input id="ref" type="text">
+                <br><br>
+                <input class="btn" type="submit" value="Share"> 
+                <input class="btn" type="reset" value="Reset">
+            </form>
+        </div>
+
+        <script>
+            const API_BASE_URL = 'http://localhost:3000';
+
+            document.getElementById('quoteForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                const token = localStorage.getItem('authToken');
+
+                if (!currentUser || !token) {
+                    alert('Lütfen önce giriş yapın.');
+                    window.location.href = 'mainPage.html';
+                    return;
+                }
+
+                const quoteText = document.getElementById('quote').value.trim();
+                const refText = document.getElementById('ref').value.trim();
+                
+                const fullContent = refText ? `${quoteText} — (${refText})` : quoteText;
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/quotes`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ content: fullContent })
+                    });
+
+                    if (res.ok) {
+                        alert('Quote paylaşıldı!');
+                        window.location.href = 'mainPage.html';
+                    } else {
+                        const data = await res.json();
+                        alert('Paylaşım başarısız: ' + (data.error || 'Bilinmeyen hata'));
+                    }
+                } catch (err) {
+                    console.error('Hata:', err);
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SYQ</title>
+        <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
+        <style>
+            body { margin: 0; padding: 15px; font-family: 'Times New Roman', Times, serif; background-color: #fafafa; }
+            #header-container { display: flex; align-items: center; justify-content: space-between; font-family: 'Times New Roman', Times, serif; gap: 15px; margin: 0 auto; }
+            .logo-title-box { display: flex; align-items: center; gap: 15px; }
+            #logo { width: 50px; height: auto; }
+            #header-link { text-decoration: none; color: black; }
+            #header-link h1 { margin: 0; font-size: 26px; }
+            #sidebarToggleBtn { display: none; font-size: 26px; cursor: pointer; user-select: none; padding: 0 5px; }
+            .search-box { flex: 1; max-width: 1000px; display: flex; justify-content: center; }
+            #searchInput { width: 100%; padding: 8px 14px; border-radius: 20px; border: 1px solid #ccc; font-size: 14px; outline: none; font-family: 'Times New Roman', Times, serif; }
+            .header-icons { display: flex; align-items: center; gap: 15px; }
+            #accountBtn, #setting { width: 28px; height: 28px; cursor: pointer; }
+            hr { margin: 15px auto; border: 0; border-top: 1px solid #ddd; }
+            #feedContainer { margin: 20px auto; display: flex; flex-direction: column; gap: 15px; }
+            .quote-card { border: 0.5px solid #bbb; border-radius: 8px; padding: 15px 20px; cursor: pointer; background-color: rgba(231, 231, 232, 0.353); font-family: 'Times New Roman', Times, serif; transition: background-color 0.2s; }
+            .quote-card:hover { background-color: rgb(234, 233, 233); }
+            .quote-card p { font-family: 'Times New Roman', Times, serif; font-size: 18px; margin-top: 0; margin-bottom: 15px; line-height: 1.4; }
+            .tob { display: flex; align-items: center; justify-content: space-between; padding-top: 5px; }
+            .profbox { display: flex; gap: 12px; align-items: center; font-family: 'Times New Roman', Times, serif; }
+            .profbox p { font-family: 'Times New Roman', Times, serif; font-size: 16px; font-weight: bold; margin: 0; }
+            .timestamp { font-size: 12px; color: #777; margin-left: 6px; font-weight: normal; }
+            .profilo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+            .icons { gap: 15px; display: flex; align-items: center; }
+            .icon-wrapper { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: bold; }
+            .icons img { width: 18px; height: 18px; cursor: pointer; transition: transform 0.1s; }
+            .icons img:hover { transform: scale(1.15); }
+            #addQuoteBtn { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background-color: black; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s, background-color 0.2s; user-select: none; z-index: 999; }
+            #addQuoteBtn:hover { transform: scale(1.1); background-color: #333; }
+            .sidebar { position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background-color: #fff; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: left 0.3s ease; z-index: 1001; padding: 20px; box-sizing: border-box; overflow-y: auto; font-family: 'Times New Roman', Times, serif; }
+            .sidebar.open { left: 0; }
+            .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 15px; }
+            .dropdown-btn { width: 100%; background-color: #f1f1f1; border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px; margin-top: 10px; display: flex; justify-content: space-between; font-family: 'Times New Roman', Times, serif; }
+            .dropdown-container { display: none; background-color: #fafafa; padding: 5px 0; border: 1px solid #eee; border-radius: 5px; }
+            .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #eee; }
+            .user-item-actions { display: flex; gap: 10px; align-items: center; }
+            .action-icon { cursor: pointer; font-weight: bold; width: 18px; height: 18px; }
+            .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 1002; }
+            .modal-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; min-width: 280px; font-family: 'Times New Roman', Times, serif; text-align: center; }
+            .close-btn { position: absolute; top: 8px; right: 12px; cursor: pointer; font-size: 20px; font-weight: bold; }
+            .auth-btn, .action-btn { border: 1px solid black; padding: 8px 16px; border-radius: 5px; color: black; background-color: rgb(235, 235, 235); cursor: pointer; font-weight: bold; font-family: 'Times New Roman', Times, serif; margin: 5px; }
+            .form-table { border: 1px solid #ccc; padding: 20px; border-radius: 10px; background-color: rgb(249, 249, 249); font-family: 'Times New Roman', Times, serif; width: 100%; }
+            .form-table td { padding: 5px; }
+        </style>
+    </head>
+    <body>
+        <div id="page">
+            <div id="header-container">
+                <div class="logo-title-box">
+                    <span id="sidebarToggleBtn" onclick="toggleSidebar()">&#9776;</span>
+                    <a href="mainPage.html"><img id="logo" src="quote-icon-logo-design-template-vector.webp" alt="Logo"></a>
+                    <a id="header-link" href="mainPage.html"><h1>Share Your Quotes</h1></a>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search quotes or users...">
+                </div>
+                <div class="header-icons">
+                    <img id="accountBtn" src="pngwing.com.png" alt="Account">
+                    <a href="settingpage.html"><img id="setting" src="settings.png" alt="Settings"></a>
+                </div>
+            </div>
+            <hr>
+        </div>
+
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3 id="panelTitle" style="margin:0;">Management Panel</h3>
+                <span class="close-btn" onclick="toggleSidebar()">&times;</span>
+            </div>
+            <div id="sidebarContent"></div>
+        </div>
+
+        <div id="feedContainer"></div>
+        <div id="addQuoteBtn" title="Add Quote">+</div>
+
+        <div id="dynamicAdminModal" class="modal-overlay">
+            <div class="modal-content" id="dynamicAdminModalContent"></div>
+        </div>
+
+        <div id="authChoiceModal" class="modal-overlay">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal('authChoiceModal')">&times;</span>
+                <div class="choice-box">
+                    <button class="auth-btn" onclick="openModal('signInModal'); closeModal('authChoiceModal');">Sign In</button>
+                    <button class="auth-btn" onclick="openModal('signUpModal'); closeModal('authChoiceModal');">Sign Up</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="signInModal" class="modal-overlay">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal('signInModal')">&times;</span>
+                <h3>Sign In</h3>
+                <form id="signInForm">
+                    <table class="form-table">
+                        <tr><td>Email:</td><td><input type="email" id="signInMail" required></td></tr> 
+                        <tr><td>Password:</td><td><input type="password" id="signInPass" required></td></tr> 
+                        <tr><td><input type="submit" value="Submit"></td><td><input type="reset" value="Reset"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <div id="signUpModal" class="modal-overlay">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal('signUpModal')">&times;</span>
+                <h3>Sign Up</h3>
+                <form id="signUpForm">
+                    <table class="form-table">
+                        <tr><td>Username:</td><td><input type="text" id="signUpUsn" required></td></tr>
+                        <tr><td>Email:</td><td><input type="email" id="signUpMail" required></td></tr> 
+                        <tr><td>Password:</td><td><input type="password" id="signUpPass" required></td></tr> 
+                        <tr><td><input type="submit" value="Submit"></td><td><input type="reset" value="Reset"></td></tr>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            const API_BASE_URL = 'http://localhost:3000';
+            let allUsersList = [];
+
+            function formatTimestamp(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffInSeconds = Math.floor((now - date) / 1000);
+
+                if (diffInSeconds < 60) return 'Just now';
+                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+                if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+                return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+            }
+
+            function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+            function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
+            function getLoggedInUser() {
+                const userString = localStorage.getItem('currentUser');
+                if (!userString || userString === 'undefined' || userString === 'null') return null;
+                try {
+                    const user = JSON.parse(userString);
+                    return (user && user.id) ? user : null;
+                } catch (e) { return null; }
+            }
+
+            function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+            function toggleDropdown(containerId) {
+                const el = document.getElementById(containerId);
+                el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+            }
+
+            async function checkUserRoleAndSetupSidebar() {
+                const currentUser = getLoggedInUser();
+                const btn = document.getElementById('sidebarToggleBtn');
+                if (!currentUser) { btn.style.display = 'none'; return; }
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`);
+                    const dbUser = await res.json();
+                    currentUser.role = dbUser.role;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                    if (dbUser.role === 'admin' || dbUser.role === 'moderator') {
+                        btn.style.display = 'inline-block';
+                        await loadManagementPanel(dbUser.role);
+                    } else { btn.style.display = 'none'; }
+                } catch (err) { console.error(err); }
+            }
+
+            async function loadManagementPanel(role) {
+                const token = localStorage.getItem('authToken');
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    allUsersList = await res.json();
+                    const container = document.getElementById('sidebarContent');
+                    container.innerHTML = '';
+
+                    const moderators = allUsersList.filter(u => u.role === 'moderator');
+                    const editors = allUsersList.filter(u => u.role === 'editor');
+                    const regularUsers = allUsersList.filter(u => u.role === 'user');
+
+                    if (role === 'admin') {
+                        container.innerHTML += renderDropdownSection('Moderators', 'modContainer', moderators, 'admin');
+                        container.innerHTML += renderDropdownSection('Editors', 'editContainer', editors, 'admin');
+                        container.innerHTML += renderDropdownSection('Users', 'userContainer', regularUsers, 'admin');
+                    } else if (role === 'moderator') {
+                        container.innerHTML += renderDropdownSection('Editors', 'editContainer', editors, 'moderator');
+                        container.innerHTML += renderDropdownSection('Users', 'userContainer', regularUsers, 'moderator');
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            function renderDropdownSection(title, containerId, users, activeRole) {
+                let html = `<button class="dropdown-btn" onclick="toggleDropdown('${containerId}')">${title} (${users.length}) <span>▼</span></button><div id="${containerId}" class="dropdown-container">`;
+                if (users.length === 0) {
+                    html += `<div style="padding: 10px; font-style: italic;">No ${title.toLowerCase()} found.</div>`;
+                } else {
+                    users.forEach(u => {
+                        const plusIconHtml = (u.role === 'user') ? `<span class="action-icon" onclick="handlePlusClick(${u.id}, '${u.role}', '${activeRole}')" title="Add Role">+</span>` : '';
+                        html += `
+                            <div class="user-item">
+                                <span>${u.username}</span>
+                                <div class="user-item-actions">
+                                    ${plusIconHtml}
+                                    <img class="action-icon" src="delete.png" onclick="handleTrashClick(${u.id}, '${u.role}', '${activeRole}')" title="Delete / Change Role">
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                html += `</div>`;
+                return html;
+            }
+
+            function handlePlusClick(targetUserId, targetRole, activeRole) {
+                const targetUser = allUsersList.find(u => u.id === targetUserId);
+                if (!targetUser) return;
+
+                if (activeRole === 'moderator') {
+                    updateUserRole(targetUserId, 'editor');
+                } else if (activeRole === 'admin') {
+                    const modalContent = document.getElementById('dynamicAdminModalContent');
+                    modalContent.innerHTML = `
+                        <span class="close-btn" onclick="closeModal('dynamicAdminModal')">&times;</span>
+                        <h3>Assign Role to ${targetUser.username}</h3><br>
+                        <button class="action-btn" onclick="updateUserRole(${targetUserId}, 'moderator')">Add as Moderator</button>
+                        <button class="action-btn" onclick="updateUserRole(${targetUserId}, 'editor')">Add as Editor</button>
+                    `;
+                    openModal('dynamicAdminModal');
+                }
+            }
+
+            function handleTrashClick(targetUserId, targetRole, activeRole) {
+                const targetUser = allUsersList.find(u => u.id === targetUserId);
+                if (!targetUser) return;
+                const modalContent = document.getElementById('dynamicAdminModalContent');
+
+                if (targetRole === 'user') {
+                    modalContent.innerHTML = `
+                        <span class="close-btn" onclick="closeModal('dynamicAdminModal')">&times;</span>
+                        <p>Do you want to delete <b>${targetUser.username}</b>?</p>
+                        <button class="action-btn" onclick="confirmDeleteUser(${targetUserId})">Yes</button>
+                        <button class="action-btn" onclick="closeModal('dynamicAdminModal')">No</button>
+                    `;
+                    openModal('dynamicAdminModal');
+                } else if (targetRole === 'moderator' || targetRole === 'editor') {
+                    if (activeRole === 'admin') {
+                        modalContent.innerHTML = `
+                            <span class="close-btn" onclick="closeModal('dynamicAdminModal')">&times;</span>
+                            <h3>Manage ${targetUser.username}</h3><br>
+                            <button class="action-btn" onclick="showChangeDropOptions(${targetUserId})">Change/Drop Role</button>
+                            <button class="action-btn" onclick="confirmDeleteUser(${targetUserId})">Delete User</button>
+                        `;
+                        openModal('dynamicAdminModal');
+                    } else if (activeRole === 'moderator') {
+                        modalContent.innerHTML = `
+                            <span class="close-btn" onclick="closeModal('dynamicAdminModal')">&times;</span>
+                            <p>Select action for <b>${targetUser.username}</b></p>
+                            <button class="action-btn" onclick="updateUserRole(${targetUserId}, 'user')">Drop Role to User</button>
+                            <button class="action-btn" onclick="confirmDeleteUser(${targetUserId})">Delete User</button>
+                        `;
+                        openModal('dynamicAdminModal');
+                    }
+                }
+            }
+
+            function showChangeDropOptions(targetUserId) {
+                const targetUser = allUsersList.find(u => u.id === targetUserId);
+                const modalContent = document.getElementById('dynamicAdminModalContent');
+                modalContent.innerHTML = `
+                    <span class="close-btn" onclick="closeModal('dynamicAdminModal')">&times;</span>
+                    <h3>Role Options for ${targetUser.username}</h3><br>
+                    <button class="action-btn" onclick="showRoleDropdownSelect(${targetUserId})">Change Role</button>
+                    <button class="action-btn" onclick="updateUserRole(${targetUserId}, 'user')">Drop Role</button>
+                `;
+            }
+
+            function showRoleDropdownSelect(targetUserId) {
+                const targetUser = allUsersList.find(u => u.id === targetUserId);
+                const modalContent = document.getElementById('dynamicAdminModalContent');
+                modalContent.innerHTML = `
+                    <span class="close-btn" onclick="closeModal('dynamicAdminModal')">&times;</span>
+                    <h3>Change Role: ${targetUser.username}</h3><br>
+                    <select id="roleSelectMenu" style="padding: 8px; font-family: 'Times New Roman', Times, serif; font-size: 16px;">
+                        <option value="moderator" ${targetUser.role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                        <option value="editor" ${targetUser.role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="user" ${targetUser.role === 'user' ? 'selected' : ''}>User</option>
+                    </select><br><br>
+                    <button class="action-btn" onclick="submitRoleChange(${targetUserId})">Save Role</button>
+                `;
+            }
+
+            function submitRoleChange(targetUserId) {
+                const selectedRole = document.getElementById('roleSelectMenu').value;
+                updateUserRole(targetUserId, selectedRole);
+            }
+
+            async function updateUserRole(userId, newRole) {
+                const token = localStorage.getItem('authToken');
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/role`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ role: newRole })
+                    });
+                    if (res.ok) {
+                        closeModal('dynamicAdminModal');
+                        const currentUser = getLoggedInUser();
+                        if (currentUser && currentUser.role) await loadManagementPanel(currentUser.role);
+                    } else alert('Role update failed.');
+                } catch (err) { console.error(err); }
+            }
+
+            async function confirmDeleteUser(userId) {
+                const token = localStorage.getItem('authToken');
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, { 
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        closeModal('dynamicAdminModal');
+                        const currentUser = getLoggedInUser();
+                        if (currentUser && currentUser.role) await loadManagementPanel(currentUser.role);
+                        loadFeed();
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            function buildQuoteCardHTML(q) {
+                const heartSrc = q.is_liked ? 'heart2.png' : 'heart.png';
+                const repostFilter = q.is_reposted ? 'style="filter: invert(48%) sepia(79%) saturate(417%) hue-rotate(86deg) brightness(98%) contrast(92%);"' : '';
+
+                return `
+                    <div class="quote-card" onclick="goToQuotePage(${q.id})">
+                        <p>${q.content}</p>
+                        <div class="tob">
+                            <div class="profbox" onclick="event.stopPropagation(); goToUserAccount(${q.user_id});">
+                                <img class="profilo" src="${q.profile_pic || 'pngwing.com.png'}">
+                                <b><p>${q.username}<span class="timestamp">• ${formatTimestamp(q.created_at)}</span></p></b> 
+                            </div> 
+                            <div class="icons">
+                                <div class="icon-wrapper">
+                                    <img id="heart_${q.id}" src="${heartSrc}" onclick="event.stopPropagation(); toggleLike(${q.id});">
+                                    <span>${q.likes_count || 0}</span>
+                                </div>
+                                <div class="icon-wrapper">
+                                    <img id="rep_${q.id}" src="repost.png" ${repostFilter} onclick="event.stopPropagation(); toggleRepost(${q.id});">
+                                    <span>${q.reposts_count || 0}</span>
+                                </div>
+                                <div class="icon-wrapper">
+                                    <img id="com_${q.id}" src="comment.png" onclick="event.stopPropagation(); goToQuotePage(${q.id});">
+                                    <span>${q.comments_count || 0}</span>
+                                </div>
+                            </div>
+                        </div> 
+                    </div>
+                `;
+            }
+
+            async function loadFeed() {
+                const currentUser = getLoggedInUser();
+                const userId = currentUser ? currentUser.id : 0;
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/quotes?userId=${userId}`);
+                    const quotes = await res.json();
+                    const container = document.getElementById('feedContainer');
+                    container.innerHTML = '';
+                    quotes.forEach(q => { container.innerHTML += buildQuoteCardHTML(q); });
+                } catch (err) { console.error('Error fetching feed:', err); }
+            }
+
+            function goToUserAccount(userId) { window.location.href = `accountpage.html?userId=${userId}`; }
+            function goToQuotePage(quoteId) { window.location.href = `quotepage.html?quoteId=${quoteId}`; }
+
+            async function toggleLike(quoteId) {
+                const token = localStorage.getItem('authToken');
+                if (!getLoggedInUser() || !token) return alert('First log in to your account!');
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/quotes/${quoteId}/like`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (res.ok) {
+                        const searchInput = document.getElementById('searchInput').value.trim();
+                        if (searchInput.length > 0) searchQuotesOrUsers(searchInput); else loadFeed();
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            async function toggleRepost(quoteId) {
+                const token = localStorage.getItem('authToken');
+                if (!getLoggedInUser() || !token) return alert('First log in to your account!');
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/quotes/${quoteId}/repost`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (res.ok) {
+                        const searchInput = document.getElementById('searchInput').value.trim();
+                        if (searchInput.length > 0) searchQuotesOrUsers(searchInput); else loadFeed();
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            document.getElementById('accountBtn').addEventListener('click', () => {
+                const currentUser = getLoggedInUser();
+                if (currentUser) window.location.href = 'accountpage.html'; else openModal('authChoiceModal');
+            });
+
+            document.getElementById('addQuoteBtn').addEventListener('click', () => {
+                const currentUser = getLoggedInUser();
+                if (currentUser) window.location.href = 'addquote.html'; else { alert('First log in to your account!'); openModal('authChoiceModal'); }
+            });
+
+            document.getElementById('signUpForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userData = { username: document.getElementById('signUpUsn').value, email: document.getElementById('signUpMail').value, password: document.getElementById('signUpPass').value };
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(userData) });
+                    const data = await res.json();
+                    if (res.ok) { alert('Account created successfully! You can now sign in.'); closeModal('signUpModal'); openModal('signInModal'); }
+                    else alert('Error: ' + (data.error || 'Registration failed.'));
+                } catch (err) { alert('An error occurred while connecting to the server.'); }
+            });
+
+            document.getElementById('signInForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const credentials = { email: document.getElementById('signInMail').value, password: document.getElementById('signInPass').value };
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(credentials) });
+                    const data = await res.json();
+                    if (res.ok) { 
+                        alert('Login successful!'); 
+                        localStorage.setItem('currentUser', JSON.stringify(data.user)); 
+                        localStorage.setItem('authToken', data.token);
+                        closeModal('signInModal'); 
+                        window.location.href = 'accountpage.html'; 
+                    }
+                    else alert('Error: ' + (data.error || 'Login failed.'));
+                } catch (err) { alert('An error occurred while connecting to the server.'); }
+            });
+
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                if (query.length > 0) searchQuotesOrUsers(query); else loadFeed();
+            });
+
+            async function searchQuotesOrUsers(query) {
+                const currentUser = getLoggedInUser();
+                const userId = currentUser ? currentUser.id : 0;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&userId=${userId}`);
+                    const quotes = await res.json();
+                    const container = document.getElementById('feedContainer');
+                    container.innerHTML = '';
+                    if (!quotes || quotes.length === 0) { container.innerHTML = '<p style="text-align:center; font-style:italic;">No results found.</p>'; return; }
+                    quotes.forEach(q => { container.innerHTML += buildQuoteCardHTML(q); });
+                } catch (err) { console.error('Search error:', err); }
+            }
+
+            window.addEventListener('pageshow', () => {
+                const searchInput = document.getElementById('searchInput').value.trim();
+                if (searchInput.length > 0) {
+                    searchQuotesOrUsers(searchInput);
+                } else {
+                    loadFeed();
+                }
+                checkUserRoleAndSetupSidebar();
+            });
+        </script>
+    </body>
+</html>

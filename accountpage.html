@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Account-SYQ</title>
+        <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
+        <style> 
+            body { margin: 0; padding: 15px; font-family: 'Times New Roman', Times, serif; background-color: #fafafa; }
+            #header-container { display: flex; align-items: center; justify-content: space-between; font-family: 'Times New Roman', Times, serif; gap: 15px; margin: 0 auto; }
+            .logo-title-box { display: flex; align-items: center; gap: 15px; }
+            #logo { width: 50px; height: auto; }
+            #header-link { text-decoration: none; color: black; }
+            #header-link h1 { margin: 0; font-size: 26px; }
+            #setting { width: 28px; height: 28px; cursor: pointer; }
+            hr { margin: 15px auto; border: 0; border-top: 1px solid #ddd; }
+            #acc { display: flex; align-items: flex-end; justify-content: space-between; background-size: cover; background-position: center; background-repeat: no-repeat; border: 0.5px solid black; background-image: url('https://freebiehive.com/wp-content/uploads/2023/10/Mountain-Silhouette-PNG-.jpg'); height: 250px; font-family: 'Times New Roman', Times, serif; position: relative; padding: 15px; box-sizing: border-box; }
+            .user-info { display: flex; align-items: center; gap: 15px; }
+            #pfp { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; background-color: rgba(255, 255, 255, 0.729); cursor: pointer; border: 2px solid white; }
+            #pfp:hover { opacity: 0.8; }
+            #name { font-style: italic; font-size: 24px; margin: 0; background-color: rgba(255, 255, 255, 0.729); border-radius: 10px; padding: 4px 8px; cursor: pointer; }
+            #name:hover { background-color: rgba(230, 230, 230, 0.9); }
+            #changeBannerBtn { position: absolute; top: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.8); border: 1px solid black; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-weight: bold; font-size: 12px; }
+            #changeBannerBtn:hover { background-color: white; }
+            #sub { display: flex; flex-wrap: wrap; gap: 35px; font-size: 16px; font-style: italic; font-weight: bold; margin-top: 15px; font-family: 'Times New Roman', Times, serif; }
+            #sub p { margin: 0; padding: 8px 14px; background-color: rgb(240, 238, 238); border-radius: 10px; cursor: pointer; }
+            #sub p:hover, #sub p.active { background-color: rgb(210, 208, 208); }
+            .quote-card { border-style: solid; border-width: 0.5px; padding: 10px 15px; background-color: rgba(231, 231, 232, 0.353); margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; border-radius: 8px; cursor: pointer; }
+            .quote-card p { font-family: 'Times New Roman', Times, serif; font-size: 18px; margin-top: 5px; margin-bottom: 10px; }
+            .profilo { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+            .profbox { display: flex; gap: 15px; align-items: center; font-family: 'Times New Roman', Times, serif; cursor: pointer; }
+            .profbox p { font-family: 'Times New Roman', Times, serif; font-size: 16px; font-weight: bold; margin: 0; }
+            .tob { display: flex; align-items: center; justify-content: space-between; padding-top: 5px; }
+            .icons { gap: 15px; display: flex; align-items: center; }
+            .icon-wrapper { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: bold; }
+            .icons img { width: 17px; height: 17px; cursor: pointer; }
+            .comment-badge { background-color: #fff; border: 1px solid #ccc; padding: 8px 12px; border-radius: 5px; margin-top: 8px; font-style: italic; }
+        </style>
+    </head>
+    <body>
+        <div id="page">
+            <div id="header-container">
+                <div class="logo-title-box">
+                    <a href="mainPage.html"><img id="logo" src="quote-icon-logo-design-template-vector.webp" alt="Logo"></a>
+                    <a id="header-link" href="mainPage.html"><h1>Share Your Quotes</h1></a>
+                </div>
+                <a href="settingpage.html"><img id="setting" src="settings.png" alt="Settings"></a>
+            </div>
+            <hr>
+        </div>
+        <br>
+
+        <div id="acc">
+            <button id="changeBannerBtn">Edit Banner</button>
+            <div class="user-info">
+                <img id="pfp" src="pngwing.com.png" alt="Profile Picture" title="Click to change profile picture">
+                <input type="file" id="pfpInput" accept="image/*" style="display: none;">
+                <h3 id="name" title="Click to change username">Username</h3>
+            </div>
+        </div>
+        <br>
+        <hr>
+
+        <div id="sub">
+            <p id="q" class="active">My Quotes</p>
+            <p id="c">Comments</p>
+            <p id="l">Likes</p>
+            <p id="r">Reposts</p>
+        </div>
+
+        <div id="myQuotesContainer" style="margin-top: 20px; display: flex; flex-direction: column;"></div>
+
+        <script>
+            const API_BASE_URL = 'http://localhost:3000';
+            let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewedUserId = urlParams.get('userId') || (currentUser ? currentUser.id : null);
+
+            async function initAccountPage() {
+                if (!viewedUserId) { alert('Please log in first.'); window.location.href = 'mainPage.html'; return; }
+                const isOwner = currentUser && (currentUser.id == viewedUserId);
+
+                if (!isOwner) {
+                    document.getElementById('changeBannerBtn').style.display = 'none';
+                    document.getElementById('pfp').style.cursor = 'default'; document.getElementById('pfp').title = '';
+                    document.getElementById('name').style.cursor = 'default'; document.getElementById('name').title = '';
+                } else { bindOwnerEvents(); }
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/users/${viewedUserId}`);
+                    const targetUser = await res.json();
+                    document.getElementById('name').innerText = targetUser.username || 'Username';
+                    if (targetUser.profile_pic) document.getElementById('pfp').src = targetUser.profile_pic;
+
+                    if (isOwner) { localStorage.setItem('currentUser', JSON.stringify(targetUser)); currentUser = targetUser; }
+                    const savedBanner = localStorage.getItem(`banner_${viewedUserId}`);
+                    if (savedBanner) document.getElementById('acc').style.backgroundImage = `url('${savedBanner}')`;
+                } catch (err) { console.error('Error fetching user info:', err); }
+
+                const activeTab = document.querySelector('#sub p.active').id;
+                if (activeTab === 'q') loadTabContent('quotes');
+                else if (activeTab === 'c') loadTabContent('comments');
+                else if (activeTab === 'l') loadTabContent('likes');
+                else if (activeTab === 'r') loadTabContent('reposts');
+            }
+
+            document.getElementById('q').addEventListener('click', function() { setActiveTab(this); loadTabContent('quotes'); });
+            document.getElementById('l').addEventListener('click', function() { setActiveTab(this); loadTabContent('likes'); });
+            document.getElementById('r').addEventListener('click', function() { setActiveTab(this); loadTabContent('reposts'); });
+            document.getElementById('c').addEventListener('click', function() { setActiveTab(this); loadTabContent('comments'); });
+
+            function setActiveTab(element) {
+                document.querySelectorAll('#sub p').forEach(p => p.classList.remove('active'));
+                element.classList.add('active');
+            }
+
+            async function loadTabContent(type) {
+                const container = document.getElementById('myQuotesContainer');
+                container.innerHTML = '';
+                const currentLogUserId = currentUser ? currentUser.id : 0;
+
+                let endpoint = '';
+                if (type === 'quotes') endpoint = `${API_BASE_URL}/api/user-quotes/${viewedUserId}`;
+                else if (type === 'likes') endpoint = `${API_BASE_URL}/api/user-likes/${viewedUserId}`;
+                else if (type === 'reposts') endpoint = `${API_BASE_URL}/api/user-reposts/${viewedUserId}`;
+                else if (type === 'comments') endpoint = `${API_BASE_URL}/api/user-comments/${viewedUserId}`;
+
+                try {
+                    const res = await fetch(endpoint);
+                    const items = await res.json();
+
+                    if (!items || items.length === 0) {
+                        container.innerHTML = '<p style="font-family: \'Times New Roman\', Times, serif;">No content yet.</p>';
+                        return;
+                    }
+
+                    if (type === 'comments') {
+                        items.forEach(c => {
+                            const card = `
+                                <div class="quote-card" onclick="window.location.href='quotepage.html?quoteId=${c.quote_id}'">
+                                    <p><strong>Quote:</strong> ${c.quote_content}</p>
+                                    <div class="comment-badge"><strong>Your Comment:</strong> ${c.comment_content}</div>
+                                    <div class="tob" style="margin-top: 10px;">
+                                        <div class="profbox">
+                                            <img class="profilo" src="${c.profile_pic || 'pngwing.com.png'}">
+                                            <b><p style="margin:0;">${c.username}</p></b> 
+                                        </div> 
+                                        <div class="icons">
+                                            <img src="comment.png" onclick="event.stopPropagation(); window.location.href='quotepage.html?quoteId=${c.quote_id}';">
+                                        </div>
+                                    </div> 
+                                </div>
+                            `;
+                            container.innerHTML += card;
+                        });
+                    } else {
+                        for (let q of items) {
+                            let isLiked = false;
+                            let isReposted = false;
+
+                            if (currentLogUserId) {
+                                const checkRes = await fetch(`${API_BASE_URL}/api/quotes?userId=${currentLogUserId}`);
+                                const allQuotes = await checkRes.json();
+                                const found = allQuotes.find(item => item.id === q.id);
+                                if (found) { isLiked = found.is_liked; isReposted = found.is_reposted; }
+                            }
+
+                            const heartSrc = isLiked ? 'heart2.png' : 'heart.png';
+                            const repostFilter = isReposted ? 'style="filter: invert(48%) sepia(79%) saturate(417%) hue-rotate(86deg) brightness(98%) contrast(92%);"' : '';
+
+                            const card = `
+                                <div class="quote-card" onclick="window.location.href='quotepage.html?quoteId=${q.id}'">
+                                    <p>${q.content}</p>
+                                    <div class="tob">
+                                        <div class="profbox" onclick="event.stopPropagation(); window.location.href='accountpage.html?userId=${q.user_id}';">
+                                            <img class="profilo" src="${q.profile_pic || 'pngwing.com.png'}">
+                                            <b><p style="margin:0;">${q.username}</p></b> 
+                                        </div> 
+                                        <div class="icons">
+                                            <div class="icon-wrapper">
+                                                <img id="heart_${q.id}" src="${heartSrc}" onclick="event.stopPropagation(); toggleLike(${q.id});">
+                                                <span>${q.likes_count || 0}</span>
+                                            </div>
+                                            <div class="icon-wrapper">
+                                                <img id="rep_${q.id}" src="repost.png" ${repostFilter} onclick="event.stopPropagation(); toggleRepost(${q.id});">
+                                                <span>${q.reposts_count || 0}</span>
+                                            </div>
+                                            <div class="icon-wrapper">
+                                                <img id="com_${q.id}" src="comment.png" onclick="event.stopPropagation(); window.location.href='quotepage.html?quoteId=${q.id}';">
+                                                <span>${q.comments_count || 0}</span>
+                                            </div>
+                                        </div>
+                                    </div> 
+                                </div>
+                            `;
+                            container.innerHTML += card;
+                        }
+                    }
+                } catch (err) { console.error('Content loading error:', err); }
+            }
+
+            async function toggleLike(quoteId) {
+                const token = localStorage.getItem('authToken');
+                if (!currentUser || !token) return alert('First log in to your account!');
+                try {
+                    await fetch(`${API_BASE_URL}/api/quotes/${quoteId}/like`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const activeTab = document.querySelector('#sub p.active').id;
+                    if (activeTab === 'q') loadTabContent('quotes');
+                    else if (activeTab === 'l') loadTabContent('likes');
+                    else if (activeTab === 'r') loadTabContent('reposts');
+                } catch (err) { console.error(err); }
+            }
+
+            async function toggleRepost(quoteId) {
+                const token = localStorage.getItem('authToken');
+                if (!currentUser || !token) return alert('First log in to your account!');
+                try {
+                    await fetch(`${API_BASE_URL}/api/quotes/${quoteId}/repost`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const activeTab = document.querySelector('#sub p.active').id;
+                    if (activeTab === 'q') loadTabContent('quotes');
+                    else if (activeTab === 'l') loadTabContent('likes');
+                    else if (activeTab === 'r') loadTabContent('reposts');
+                } catch (err) { console.error(err); }
+            }
+
+            function bindOwnerEvents() {
+                document.getElementById('name').addEventListener('click', async () => {
+                    const token = localStorage.getItem('authToken');
+                    const newUsername = prompt('Enter new username:', currentUser.username);
+                    if (newUsername && newUsername.trim() !== '') {
+                        try {
+                            const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`, {
+                                method: 'PUT',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ username: newUsername.trim() })
+                            });
+                            if (res.ok) { 
+                                currentUser.username = newUsername.trim(); 
+                                localStorage.setItem('currentUser', JSON.stringify(currentUser)); 
+                                document.getElementById('name').innerText = currentUser.username; 
+                                alert('Username updated!'); 
+                            }
+                        } catch (err) { console.error(err); }
+                    }
+                });
+
+                document.getElementById('pfp').addEventListener('click', () => { document.getElementById('pfpInput').click(); });
+                document.getElementById('pfpInput').addEventListener('change', function(e) {
+                    const token = localStorage.getItem('authToken');
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = async function(event) {
+                            const base64Image = event.target.result;
+                            try {
+                                const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`, {
+                                    method: 'PUT',
+                                    headers: { 
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${token}`
+                                    },
+                                    body: JSON.stringify({ profile_pic: base64Image })
+                                });
+                                if (res.ok) { 
+                                    currentUser.profile_pic = base64Image; 
+                                    localStorage.setItem('currentUser', JSON.stringify(currentUser)); 
+                                    document.getElementById('pfp').src = base64Image; 
+                                    alert('Profile picture updated!'); 
+                                }
+                            } catch (err) { console.error(err); }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                document.getElementById('changeBannerBtn').addEventListener('click', () => {
+                    const newBannerUrl = prompt('Enter new background image URL:');
+                    if (newBannerUrl && newBannerUrl.trim() !== '') {
+                        document.getElementById('acc').style.backgroundImage = `url('${newBannerUrl.trim()}')`;
+                        localStorage.setItem(`banner_${currentUser.id}`, newBannerUrl.trim());
+                        alert('Background image changed!');
+                    }
+                });
+            }
+
+            window.addEventListener('pageshow', () => {
+                initAccountPage();
+            });
+        </script>
+    </body>
+</html>

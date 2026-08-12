@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Settings-SYQ</title>
+        <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
+        <style>
+            body {
+                font-family: 'Times New Roman', Times, serif;
+                margin: 0;
+                padding: 15px;
+            }
+
+            #sett {
+                text-align: center;
+                font-size: 20px;
+                text-decoration: none;  
+                list-style-type: none; 
+                padding: 0;
+                margin: 0;
+            }
+
+            .hi {
+                height: 50px;
+                cursor: pointer;
+                background-color: rgb(248, 245, 245);
+            }
+
+            .hi:hover {
+                background-color: rgb(232, 230, 230);
+            }
+
+            .hi a, .hi span {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                text-decoration: none;
+                color: inherit;
+            }
+
+            
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            }
+
+            .popup-box {
+                border-style: solid;
+                padding: 25px;
+                width: 200px;
+                text-align: center;
+                border-radius: 8px;
+                border-width: 2px;
+                background-color: rgb(249, 249, 249);
+                font-family: 'Times New Roman', Times, serif;
+            }
+
+            .btn-group {
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                text-align: center;
+            }
+
+            .tik {
+                background-color: rgb(243, 243, 243);
+                border-radius: 4px;
+                border-width: 0.5px;
+                cursor: pointer;
+                padding: 5px 15px;
+                font-family: 'Times New Roman', Times, serif;
+            }
+
+            .tik:hover {
+                background-color: rgb(222, 222, 222);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>SETTINGS</h1>
+        <hr>
+        <br>
+        <br>
+
+        <ul id="sett">
+            <li id="rp" class="hi"><a href="editrep.html">Edit Reposts</a></li>
+            <hr>
+            
+            <li id="co" class="hi"><a href="editcom.html">Edit Comments</a></li>
+            <hr>
+            
+            <li id="qu" class="hi"><a href="editqu.html">Edit Quotes</a></li>
+            <hr>
+            
+            <li id="li" class="hi"><a href="editli.html">Edit Likes</a></li>
+            <hr>
+            
+            <li id="si" class="hi"><span onclick="openModal('signOutModal')">Sign Out</span></li>
+            <hr>
+            
+            <li id="ac" class="hi"><span onclick="openModal('deleteAccModal')">Delete Account</span></li>
+            <hr>
+        </ul>
+
+        <!--SIGN OUT-->
+        <div id="signOutModal" class="modal-overlay">
+            <div class="popup-box">
+                <p>Do you want to sign out?</p>
+                <div class="btn-group">
+                    <button class="tik" onclick="confirmSignOut()">Yes</button>
+                    <button class="tik" onclick="closeModal('signOutModal')">No</button>
+                </div> 
+            </div>
+        </div>
+
+        <!--DELETE ACCOUNT -->
+        <div id="deleteAccModal" class="modal-overlay">
+            <div class="popup-box">
+                <p>Do you want to delete your account?</p>
+                <div class="btn-group">
+                    <button class="tik" onclick="confirmDeleteAccount()">Yes</button>
+                    <button class="tik" onclick="closeModal('deleteAccModal')">No</button>
+                </div> 
+            </div>
+        </div>
+
+        <script>
+            const API_BASE_URL = 'http://localhost:3000';
+
+            function openModal(id) {
+                document.getElementById(id).style.display = 'flex';
+            }
+
+            function closeModal(id) {
+                document.getElementById(id).style.display = 'none';
+            }
+
+            function confirmSignOut() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'mainPage.html';
+            }
+
+            async function confirmDeleteAccount() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) return alert('Giriş yapmalısınız.');
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'mainPage.html';
+                    } else {
+                        alert('Hesap silinirken hata oluştu.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        </script>
+    </body>
+</html>
