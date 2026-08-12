@@ -30,20 +30,20 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // DB CONNECTION W .ENV
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASS || '13581358',
-    database: process.env.DB_NAME || 'share_your_quotes'
+    database: process.env.DB_NAME || 'share_your_quotes',
+    port: process.env.DB_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error('Veritabanı bağlantı hatası:', err.message);
-        return;
-    }
-    console.log('MySQL (share_your_quotes) Veritabanına başarıyla bağlanıldı!');
-});
+console.log('MySQL Bağlantı Havuzu (Pool) Başarıyla Oluşturuldu!');
 
 // XSS CLEANING
 function cleanInput(text) {
