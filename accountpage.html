@@ -69,7 +69,7 @@
         <div id="myQuotesContainer" style="margin-top: 20px; display: flex; flex-direction: column;"></div>
 
         <script>
-            const API_BASE_URL = 'http://localhost:3000';
+            const API_BASE_URL = 'https://share-your-quotes.onrender.com';
             let currentUser = JSON.parse(localStorage.getItem('currentUser'));
             const urlParams = new URLSearchParams(window.location.search);
             const viewedUserId = urlParams.get('userId') || (currentUser ? currentUser.id : null);
