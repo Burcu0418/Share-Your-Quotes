@@ -36,6 +36,7 @@ const db = mysql.createPool({
     password: process.env.DB_PASS || '13581358',
     database: process.env.DB_NAME || 'share_your_quotes',
     port: process.env.DB_PORT || 3306,
+    ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
