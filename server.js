@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 3000;
 
 //MIDDLEWARE
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Rate Limiter
 const limiter = rateLimit({
