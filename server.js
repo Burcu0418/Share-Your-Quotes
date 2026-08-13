@@ -35,12 +35,14 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // DB CONNECTION W .ENV
 const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '13581358',
-    database: process.env.DB_NAME || 'share_your_quotes',
-    port: process.env.DB_PORT || 3306,
-    ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    port: Number(process.env.DB_PORT),
+    ssl: {
+        rejectUnauthorized: false
+    },
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
