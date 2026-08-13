@@ -10,12 +10,14 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
+
+// Render / Vercel Proxy Ayarı (Hayati)
 app.set('trust proxy', 1);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 const PORT = process.env.PORT || 3000;
 
-//MIDDLEWARE
+// MIDDLEWARE
 app.use(helmet());
 app.use(cors({
     origin: '*',
@@ -26,7 +28,7 @@ app.use(cors({
 // Rate Limiter
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
-    max: 100,
+    max: 200,
     message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
@@ -34,24 +36,31 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// DB CONNECTION W .ENV
+// DB CONNECTION (Aiven Cloud & Local Uyumlu)
 const db = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASS || '',
+    database: process.env.DB_NAME || 'defaultdb',
     port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-    ssl: {
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: false
-    },
+    ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout: 60000
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+    connectTimeout: 30000
 });
 
-console.log('MySQL Bağlantı Havuzu (Pool) Başarıyla Oluşturuldu!');
+// BAĞLANTI TESTİ (Render Logs ekranında görünür)
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error('❌ VERİTABANI BAĞLANTI HATASI:', err.message);
+    } else {
+        console.log('✅ Aiven MySQL Veritabanına Başarıyla Bağlanıldı!');
+        connection.release();
+    }
+});
 
 // XSS CLEANING
 function cleanInput(text) {
@@ -76,7 +85,7 @@ function authenticateToken(req, res, next) {
     });
 }
 
-//USER ROUTES
+// USER ROUTES
 
 // SIGN UP
 app.post('/api/register', async (req, res) => {
@@ -92,6 +101,7 @@ app.post('/api/register', async (req, res) => {
         
         db.query(sql, [username, email, hashedPassword], (err, result) => {
             if (err) {
+                console.error("Register SQL Error:", err);
                 if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'This username or email is already in use.' });
                 return res.status(500).json({ error: 'Database error: ' + err.message });
             }
@@ -102,7 +112,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// SIGNIN
+// SIGN IN
 app.post('/api/login', (req, res) => {
     const email = cleanInput(req.body.email);
     const password = req.body.password;
@@ -112,12 +122,12 @@ app.post('/api/login', (req, res) => {
     const sql = 'SELECT id, username, email, password, role, profile_pic FROM users WHERE email = ?';
     db.query(sql, [email], async (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (results.length === 0) return res.status(401).json({ error: 'Invalid email or password.' });
+        if (!results || results.length === 0) return res.status(401).json({ error: 'Invalid email or password.' });
 
         const user = results[0];
         let isMatch = false;
 
-        if (user.password.startsWith('$2b$')) {
+        if (user.password && user.password.startsWith('$2b$')) {
             isMatch = await bcrypt.compare(password, user.password);
         } else {
             isMatch = (password === user.password);
@@ -138,7 +148,7 @@ app.get('/api/users/:id', (req, res) => {
     const userId = req.params.id;
     const sql = 'SELECT id, username, email, role, profile_pic FROM users WHERE id = ?';
     db.query(sql, [userId], (err, results) => {
-        if (err || results.length === 0) return res.status(404).json({ error: 'User not found.' });
+        if (err || !results || results.length === 0) return res.status(404).json({ error: 'User not found.' });
         res.json(results[0]);
     });
 });
@@ -146,7 +156,6 @@ app.get('/api/users/:id', (req, res) => {
 app.put('/api/users/:id', authenticateToken, (req, res) => {
     const userId = req.params.id;
     
-    //ONLY ACC OWNER CAN UPDATE PFP
     if (req.user.id != userId) return res.status(403).json({ error: 'Unauthorized.' });
 
     const username = cleanInput(req.body.username);
@@ -169,7 +178,6 @@ app.put('/api/users/:id', authenticateToken, (req, res) => {
 app.delete('/api/users/:id', authenticateToken, (req, res) => {
     const userId = req.params.id;
     
-    // ACC DELETING ONLY ACC OWNER OR AUTH PERSON
     const isAuthorized = ['admin', 'moderator'].includes(req.user.role) || req.user.id == userId;
     if (!isAuthorized) return res.status(403).json({ error: 'Unauthorized.' });
 
@@ -205,15 +213,19 @@ app.get('/api/quotes', (req, res) => {
             (SELECT COUNT(*) FROM likes WHERE likes.quote_id = quotes.id) AS likes_count,
             (SELECT COUNT(*) FROM reposts WHERE reposts.quote_id = quotes.id) AS reposts_count,
             (SELECT COUNT(*) FROM comments WHERE comments.quote_id = quotes.id) AS comments_count
-        FROM quotes JOIN users ON quotes.user_id = users.id 
+        FROM quotes 
+        JOIN users ON quotes.user_id = users.id 
         LEFT JOIN likes ON likes.quote_id = quotes.id AND likes.user_id = ?
         LEFT JOIN reposts ON reposts.quote_id = quotes.id AND reposts.user_id = ?
         ORDER BY quotes.created_at DESC
     `;
 
     db.query(sql, [userId, userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        if (err) {
+            console.error("Fetch Quotes Error:", err);
+            return res.json([]); // Hata durumunda frontend çökmesin diye boş dizi dönüyoruz
+        }
+        res.json(results || []);
     });
 });
 
@@ -228,8 +240,8 @@ app.get('/api/user-quotes/:userId', (req, res) => {
         WHERE quotes.user_id = ? ORDER BY quotes.created_at DESC
     `;
     db.query(sql, [userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        if (err) return res.json([]);
+        res.json(results || []);
     });
 });
 
@@ -244,8 +256,8 @@ app.get('/api/user-likes/:userId', (req, res) => {
         WHERE likes.user_id = ? ORDER BY likes.id DESC
     `;
     db.query(sql, [userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        if (err) return res.json([]);
+        res.json(results || []);
     });
 });
 
@@ -260,8 +272,8 @@ app.get('/api/user-reposts/:userId', (req, res) => {
         WHERE reposts.user_id = ? ORDER BY reposts.id DESC
     `;
     db.query(sql, [userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        if (err) return res.json([]);
+        res.json(results || []);
     });
 });
 
@@ -274,8 +286,8 @@ app.get('/api/user-comments/:userId', (req, res) => {
         WHERE comments.user_id = ? ORDER BY comments.created_at DESC
     `;
     db.query(sql, [userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        if (err) return res.json([]);
+        res.json(results || []);
     });
 });
 
@@ -301,12 +313,12 @@ app.get('/api/search', (req, res) => {
         ORDER BY quotes.created_at DESC
     `;
     db.query(sql, [userId, userId, searchTerm, searchTerm], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        if (err) return res.json([]);
+        res.json(results || []);
     });
 });
 
-// INTEREACTION ROUTES
+// INTERACTION ROUTES
 
 app.post('/api/quotes/:id/like', authenticateToken, (req, res) => {
     const quoteId = req.params.id;
@@ -315,7 +327,7 @@ app.post('/api/quotes/:id/like', authenticateToken, (req, res) => {
     db.query('SELECT * FROM likes WHERE quote_id = ? AND user_id = ?', [quoteId, user_id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        if (results.length > 0) {
+        if (results && results.length > 0) {
             db.query('DELETE FROM likes WHERE quote_id = ? AND user_id = ?', [quoteId, user_id], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json({ liked: false });
@@ -336,7 +348,7 @@ app.post('/api/quotes/:id/repost', authenticateToken, (req, res) => {
     db.query('SELECT * FROM reposts WHERE quote_id = ? AND user_id = ?', [quoteId, user_id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        if (results.length > 0) {
+        if (results && results.length > 0) {
             db.query('DELETE FROM reposts WHERE quote_id = ? AND user_id = ?', [quoteId, user_id], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 res.json({ reposted: false });
@@ -364,10 +376,10 @@ app.get('/api/quotes/:id', (req, res) => {
     `;
 
     db.query(quoteSql, [quoteId], (err, qResults) => {
-        if (err || qResults.length === 0) return res.status(404).json({ error: 'Quote not found.' });
+        if (err || !qResults || qResults.length === 0) return res.status(404).json({ error: 'Quote not found.' });
         db.query(commentsSql, [quoteId], (err, cResults) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ quote: qResults[0], comments: cResults });
+            res.json({ quote: qResults[0], comments: cResults || [] });
         });
     });
 });
@@ -404,7 +416,7 @@ app.delete('/api/comments/:id', authenticateToken, (req, res) => {
     });
 });
 
-//DELETING QUOTE 
+// DELETING QUOTE 
 app.delete('/api/quotes/:id', authenticateToken, (req, res) => {
     const quoteId = req.params.id;
     const isAuthorized = ['admin', 'moderator', 'editor'].includes(req.user.role);
@@ -439,14 +451,14 @@ app.delete('/api/reposts/:quoteId', authenticateToken, (req, res) => {
     });
 });
 
-//ADMIN AND ROLE MANAGEMENT
+// ADMIN AND ROLE MANAGEMENT
 
 app.get('/api/admin/users', authenticateToken, (req, res) => {
     if (!['admin', 'moderator'].includes(req.user.role)) return res.status(403).json({ error: 'Access denied.' });
 
     db.query('SELECT id, username, email, role, profile_pic FROM users ORDER BY username ASC', (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+        res.json(results || []);
     });
 });
 
