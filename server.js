@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
+app.set('trust proxy', 1);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 const PORT = process.env.PORT || 3000;
