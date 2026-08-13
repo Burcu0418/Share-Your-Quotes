@@ -11,7 +11,7 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Render / Vercel Proxy Ayarı
+// Render 
 app.set('trust proxy', 1);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
@@ -36,7 +36,7 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// DB CONNECTION (Aiven Cloud URI, Env Variables ve Local Uyumlu)
+// DB CONNECTION 
 let dbConfig;
 
 if (process.env.DATABASE_URL) {
@@ -60,12 +60,12 @@ if (process.env.DATABASE_URL) {
 
 const db = mysql.createPool(dbConfig);
 
-// SSL zorunluluğunu URI/Pool tarafında garantiye alma
+
 if (db.pool && db.pool.config && db.pool.config.connectionConfig) {
     db.pool.config.connectionConfig.ssl = { rejectUnauthorized: false };
 }
 
-// BAĞLANTI TESTİ (Render Logs ekranında görünür)
+// CONNECTION TEST
 db.getConnection((err, connection) => {
     if (err) {
         console.error('❌ VERİTABANI BAĞLANTI HATASI:', err.message);
@@ -157,12 +157,21 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// USER INFO
 app.get('/api/users/:id', (req, res) => {
     const userId = req.params.id;
     const sql = 'SELECT id, username, email, role, profile_pic FROM users WHERE id = ?';
     db.query(sql, [userId], (err, results) => {
         if (err || !results || results.length === 0) return res.status(404).json({ error: 'User not found.' });
-        res.json(results[0]);
+        
+        const user = results[0];
+        const newToken = jwt.sign(
+            { id: user.id, role: user.role, username: user.username }, 
+            JWT_SECRET, 
+            { expiresIn: '7d' }
+        );
+
+        res.json({ user, token: newToken });
     });
 });
 
@@ -467,10 +476,15 @@ app.delete('/api/reposts/:quoteId', authenticateToken, (req, res) => {
 // ADMIN AND ROLE MANAGEMENT
 
 app.get('/api/admin/users', authenticateToken, (req, res) => {
-    if (!['admin', 'moderator'].includes(req.user.role)) return res.status(403).json({ error: 'Access denied.' });
+    if (!['admin', 'moderator'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Access denied.' });
+    }
 
     db.query('SELECT id, username, email, role, profile_pic FROM users ORDER BY username ASC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            console.error("Admin Users Error:", err);
+            return res.status(500).json([]);
+        }
         res.json(results || []);
     });
 });

@@ -163,15 +163,25 @@
 
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`);
-                    const dbUser = await res.json();
-                    currentUser.role = dbUser.role;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    const data = await res.json();
+                    
+                    if (data && data.user) {
+                        
+                        currentUser.role = data.user.role;
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        
+                        if (data.token) {
+                            localStorage.setItem('authToken', data.token);
+                        }
 
-                    if (dbUser.role === 'admin' || dbUser.role === 'moderator') {
-                        btn.style.display = 'inline-block';
-                        await loadManagementPanel(dbUser.role);
-                    } else { btn.style.display = 'none'; }
-                } catch (err) { console.error(err); }
+                        if (data.user.role === 'admin' || data.user.role === 'moderator') {
+                            btn.style.display = 'inline-block';
+                            await loadManagementPanel(data.user.role);
+                        } else { 
+                            btn.style.display = 'none'; 
+                        }
+                    }
+                } catch (err) { console.error("Role check error:", err); }
             }
 
             async function loadManagementPanel(role) {
@@ -180,7 +190,15 @@
                     const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    allUsersList = await res.json();
+                    
+                    const data = await res.json();
+
+                    if (!res.ok || !Array.isArray(data)) {
+                        console.warn("Management verisi alınamadı:", data);
+                        return;
+                    }
+
+                    allUsersList = data;
                     const container = document.getElementById('sidebarContent');
                     container.innerHTML = '';
 
@@ -196,7 +214,7 @@
                         container.innerHTML += renderDropdownSection('Editors', 'editContainer', editors, 'moderator');
                         container.innerHTML += renderDropdownSection('Users', 'userContainer', regularUsers, 'moderator');
                     }
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error("Load management error:", err); }
             }
 
             function renderDropdownSection(title, containerId, users, activeRole) {
@@ -379,7 +397,9 @@
                     const quotes = await res.json();
                     const container = document.getElementById('feedContainer');
                     container.innerHTML = '';
-                    quotes.forEach(q => { container.innerHTML += buildQuoteCardHTML(q); });
+                    if (Array.isArray(quotes)) {
+                        quotes.forEach(q => { container.innerHTML += buildQuoteCardHTML(q); });
+                    }
                 } catch (err) { console.error('Error fetching feed:', err); }
             }
 
@@ -475,7 +495,10 @@
                     const quotes = await res.json();
                     const container = document.getElementById('feedContainer');
                     container.innerHTML = '';
-                    if (!quotes || quotes.length === 0) { container.innerHTML = '<p style="text-align:center; font-style:italic;">No results found.</p>'; return; }
+                    if (!quotes || !Array.isArray(quotes) || quotes.length === 0) { 
+                        container.innerHTML = '<p style="text-align:center; font-style:italic;">No results found.</p>'; 
+                        return; 
+                    }
                     quotes.forEach(q => { container.innerHTML += buildQuoteCardHTML(q); });
                 } catch (err) { console.error('Search error:', err); }
             }
