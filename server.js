@@ -40,15 +40,14 @@ const db = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
-    port: Number(process.env.DB_PORT),
+    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
     ssl: {
         rejectUnauthorized: false
     },
+    connectTimeout: 20000,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+    queueLimit: 0
 });
 
 console.log('MySQL Bağlantı Havuzu (Pool) Başarıyla Oluşturuldu!');
