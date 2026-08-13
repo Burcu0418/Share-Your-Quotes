@@ -11,7 +11,7 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Render / Vercel Proxy Ayarı (Hayati)
+// Render / Vercel Proxy Ayarı
 app.set('trust proxy', 1);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
@@ -36,21 +36,34 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// DB CONNECTION (Aiven Cloud & Local Uyumlu)
-const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '',
-    database: process.env.DB_NAME || 'defaultdb',
-    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-    ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
-    connectTimeout: 30000
-});
+// DB CONNECTION (Aiven Cloud URI, Env Variables ve Local Uyumlu)
+let dbConfig;
+
+if (process.env.DATABASE_URL) {
+    dbConfig = process.env.DATABASE_URL;
+} else {
+    dbConfig = {
+        host: process.env.DB_HOST ? process.env.DB_HOST.trim() : 'localhost',
+        user: process.env.DB_USER ? process.env.DB_USER.trim() : 'root',
+        password: process.env.DB_PASS ? process.env.DB_PASS.trim() : '',
+        database: process.env.DB_NAME ? process.env.DB_NAME.trim() : 'defaultdb',
+        port: process.env.DB_PORT ? Number(process.env.DB_PORT.trim()) : 3306,
+        ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
+        connectTimeout: 60000
+    };
+}
+
+const db = mysql.createPool(dbConfig);
+
+// SSL zorunluluğunu URI/Pool tarafında garantiye alma
+if (db.pool && db.pool.config && db.pool.config.connectionConfig) {
+    db.pool.config.connectionConfig.ssl = { rejectUnauthorized: false };
+}
 
 // BAĞLANTI TESTİ (Render Logs ekranında görünür)
 db.getConnection((err, connection) => {
@@ -223,7 +236,7 @@ app.get('/api/quotes', (req, res) => {
     db.query(sql, [userId, userId], (err, results) => {
         if (err) {
             console.error("Fetch Quotes Error:", err);
-            return res.json([]); // Hata durumunda frontend çökmesin diye boş dizi dönüyoruz
+            return res.json([]);
         }
         res.json(results || []);
     });
