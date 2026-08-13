@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Edit Comments - SYQ</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
         <style>
             body { 
@@ -19,21 +20,25 @@
                 align-items: center; 
                 border-radius: 8px; 
                 background-color: #f9f9f9; 
+                gap: 10px;
             }
             .item-card p {
                 margin: 0;
                 font-size: 18px;
+                word-break: break-word;
             }
             .item-card small {
                 color: #666;
                 font-size: 14px;
                 display: block;
                 margin-top: 4px;
+                word-break: break-word;
             }
             .trash-icon { 
                 width: 22px; 
                 height: 22px; 
                 cursor: pointer; 
+                flex-shrink: 0;
             }
 
             .modal-overlay {
@@ -52,12 +57,14 @@
             .popup-box {
                 border-style: solid;
                 padding: 25px;
-                width: 220px;
+                width: 80%;
+                max-width: 280px;
                 text-align: center;
                 border-radius: 8px;
                 border-width: 2px;
                 background-color: rgb(249, 249, 249);
                 font-family: 'Times New Roman', Times, serif;
+                box-sizing: border-box;
             }
 
             .popup-box p {
@@ -69,7 +76,7 @@
             .btn-group {
                 display: flex;
                 justify-content: center;
-                gap: 30px;
+                gap: 20px;
                 text-align: center;
             }
 
@@ -115,7 +122,7 @@
                     const container = document.getElementById('listContainer');
                     container.innerHTML = '';
 
-                    if (!comments || comments.length === 0) { 
+                    if (!comments || !Array.isArray(comments) || comments.length === 0) { 
                         container.innerHTML = '<p>Leave a comment first.</p>'; 
                         return; 
                     }

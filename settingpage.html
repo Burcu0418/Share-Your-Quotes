@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Settings-SYQ</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
         <style>
             body {
@@ -39,7 +40,6 @@
                 color: inherit;
             }
 
-            
             .modal-overlay {
                 display: none;
                 position: fixed;
@@ -56,18 +56,20 @@
             .popup-box {
                 border-style: solid;
                 padding: 25px;
-                width: 200px;
+                width: 80%;
+                max-width: 250px;
                 text-align: center;
                 border-radius: 8px;
                 border-width: 2px;
                 background-color: rgb(249, 249, 249);
                 font-family: 'Times New Roman', Times, serif;
+                box-sizing: border-box;
             }
 
             .btn-group {
                 display: flex;
                 justify-content: center;
-                gap: 30px;
+                gap: 20px;
                 text-align: center;
             }
 
@@ -88,7 +90,6 @@
     <body>
         <h1>SETTINGS</h1>
         <hr>
-        <br>
         <br>
 
         <ul id="sett">
@@ -146,22 +147,28 @@
 
             function confirmSignOut() {
                 localStorage.removeItem('currentUser');
+                localStorage.removeItem('authToken');
                 window.location.href = 'mainPage.html';
             }
 
             async function confirmDeleteAccount() {
                 const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-                if (!currentUser) return alert('Giriş yapmalısınız.');
+                const token = localStorage.getItem('authToken');
+                if (!currentUser || !token) return alert('Please log in first.');
 
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
                     if (res.ok) {
                         localStorage.removeItem('currentUser');
+                        localStorage.removeItem('authToken');
                         window.location.href = 'mainPage.html';
                     } else {
-                        alert('Hesap silinirken hata oluştu.');
+                        alert('Error deleting account.');
                     }
                 } catch (err) {
                     console.error(err);

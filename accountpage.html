@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Account-SYQ</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
         <style> 
             body { margin: 0; padding: 15px; font-family: 'Times New Roman', Times, serif; background-color: #fafafa; }
@@ -16,15 +17,15 @@
             .user-info { display: flex; align-items: center; gap: 15px; }
             #pfp { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; background-color: rgba(255, 255, 255, 0.729); cursor: pointer; border: 2px solid white; }
             #pfp:hover { opacity: 0.8; }
-            #name { font-style: italic; font-size: 24px; margin: 0; background-color: rgba(255, 255, 255, 0.729); border-radius: 10px; padding: 4px 8px; cursor: pointer; }
+            #name { font-style: italic; font-size: 24px; margin: 0; background-color: rgba(255, 255, 255, 0.729); border-radius: 10px; padding: 4px 8px; cursor: pointer; word-break: break-word; }
             #name:hover { background-color: rgba(230, 230, 230, 0.9); }
             #changeBannerBtn { position: absolute; top: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.8); border: 1px solid black; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-weight: bold; font-size: 12px; }
             #changeBannerBtn:hover { background-color: white; }
-            #sub { display: flex; flex-wrap: wrap; gap: 35px; font-size: 16px; font-style: italic; font-weight: bold; margin-top: 15px; font-family: 'Times New Roman', Times, serif; }
+            #sub { display: flex; flex-wrap: wrap; gap: 15px; font-size: 16px; font-style: italic; font-weight: bold; margin-top: 15px; font-family: 'Times New Roman', Times, serif; }
             #sub p { margin: 0; padding: 8px 14px; background-color: rgb(240, 238, 238); border-radius: 10px; cursor: pointer; }
             #sub p:hover, #sub p.active { background-color: rgb(210, 208, 208); }
             .quote-card { border-style: solid; border-width: 0.5px; padding: 10px 15px; background-color: rgba(231, 231, 232, 0.353); margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; border-radius: 8px; cursor: pointer; }
-            .quote-card p { font-family: 'Times New Roman', Times, serif; font-size: 18px; margin-top: 5px; margin-bottom: 10px; }
+            .quote-card p { font-family: 'Times New Roman', Times, serif; font-size: 18px; margin-top: 5px; margin-bottom: 10px; word-break: break-word; }
             .profilo { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
             .profbox { display: flex; gap: 15px; align-items: center; font-family: 'Times New Roman', Times, serif; cursor: pointer; }
             .profbox p { font-family: 'Times New Roman', Times, serif; font-size: 16px; font-weight: bold; margin: 0; }
@@ -32,7 +33,15 @@
             .icons { gap: 15px; display: flex; align-items: center; }
             .icon-wrapper { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: bold; }
             .icons img { width: 17px; height: 17px; cursor: pointer; }
-            .comment-badge { background-color: #fff; border: 1px solid #ccc; padding: 8px 12px; border-radius: 5px; margin-top: 8px; font-style: italic; }
+            .comment-badge { background-color: #fff; border: 1px solid #ccc; padding: 8px 12px; border-radius: 5px; margin-top: 8px; font-style: italic; word-break: break-word; }
+
+            @media (max-width: 600px) {
+                #header-link h1 { font-size: 20px; }
+                #acc { height: 200px; padding: 10px; }
+                #pfp { width: 70px; height: 70px; }
+                #name { font-size: 18px; }
+                #sub p { padding: 6px 10px; font-size: 14px; }
+            }
         </style>
     </head>
     <body>
@@ -86,7 +95,9 @@
 
                 try {
                     const res = await fetch(`${API_BASE_URL}/api/users/${viewedUserId}`);
-                    const targetUser = await res.json();
+                    const targetData = await res.json();
+                    const targetUser = targetData.user || targetData;
+
                     document.getElementById('name').innerText = targetUser.username || 'Username';
                     if (targetUser.profile_pic) document.getElementById('pfp').src = targetUser.profile_pic;
 
@@ -127,7 +138,7 @@
                     const res = await fetch(endpoint);
                     const items = await res.json();
 
-                    if (!items || items.length === 0) {
+                    if (!items || !Array.isArray(items) || items.length === 0) {
                         container.innerHTML = '<p style="font-family: \'Times New Roman\', Times, serif;">No content yet.</p>';
                         return;
                     }
@@ -159,8 +170,10 @@
                             if (currentLogUserId) {
                                 const checkRes = await fetch(`${API_BASE_URL}/api/quotes?userId=${currentLogUserId}`);
                                 const allQuotes = await checkRes.json();
-                                const found = allQuotes.find(item => item.id === q.id);
-                                if (found) { isLiked = found.is_liked; isReposted = found.is_reposted; }
+                                if (Array.isArray(allQuotes)) {
+                                    const found = allQuotes.find(item => item.id === q.id);
+                                    if (found) { isLiked = found.is_liked; isReposted = found.is_reposted; }
+                                }
                             }
 
                             const heartSrc = isLiked ? 'heart2.png' : 'heart.png';

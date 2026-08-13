@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Quote Detail - SYQ</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/x-icon" href="favicon-16x16.png">
         <style>
             body { margin: 0; padding: 15px; font-family: 'Times New Roman', Times, serif; background-color: #fafafa; }
@@ -12,7 +13,7 @@
             #header-link h1 { margin: 0; font-size: 26px; }
             #setting { width: 28px; height: 28px; cursor: pointer; }
             hr { margin: 15px auto; border: 0; border-top: 1px solid #ddd; }
-            #quo { border: 0.5px solid black; padding: 15px; background-color: rgba(231, 231, 232, 0.353); margin-top: 20px; border-radius: 8px; }
+            #quo { border: 0.5px solid black; padding: 15px; background-color: rgba(231, 231, 232, 0.353); margin-top: 20px; border-radius: 8px; word-break: break-word; }
             #profilo { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
             #profbox { display: flex; gap: 10px; align-items: center; cursor: pointer; }
             #profbox p { margin: 0; font-size: 16px; font-weight: bold; }
@@ -22,17 +23,22 @@
             #icons { gap: 15px; display: flex; align-items: center; }
             .icon-wrapper { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: bold; }
             #comm { font-size: 25px; margin-top: 30px; }
-            .comment-box { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
-            .comment-user-info { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+            .comment-box { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; word-break: break-word; }
+            .comment-user-info { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; flex: 1; }
             .comment-input-area { margin-top: 20px; display: flex; gap: 10px; }
-            .comment-input-area input { flex: 1; padding: 8px; font-family: 'Times New Roman', Times, serif; }
-            .comment-input-area button { padding: 8px 16px; cursor: pointer; font-family: 'Times New Roman', Times, serif; }
+            .comment-input-area input { flex: 1; padding: 8px; font-family: 'Times New Roman', Times, serif; box-sizing: border-box; }
+            .comment-input-area button { padding: 8px 16px; cursor: pointer; font-family: 'Times New Roman', Times, serif; flex-shrink: 0; }
             .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 1000; }
-            .popup-box { border-style: solid; padding: 25px; width: 220px; text-align: center; border-radius: 8px; border-width: 2px; background-color: rgb(249, 249, 249); font-family: 'Times New Roman', Times, serif; }
+            .popup-box { border-style: solid; padding: 25px; width: 80%; max-width: 280px; text-align: center; border-radius: 8px; border-width: 2px; background-color: rgb(249, 249, 249); font-family: 'Times New Roman', Times, serif; box-sizing: border-box; }
             .popup-box p { margin-top: 0; margin-bottom: 20px; font-size: 16px; }
-            .btn-group { display: flex; justify-content: center; gap: 30px; text-align: center; }
+            .btn-group { display: flex; justify-content: center; gap: 20px; text-align: center; }
             .tik { background-color: rgb(243, 243, 243); border-radius: 4px; border-width: 0.5px; cursor: pointer; padding: 5px 15px; font-family: 'Times New Roman', Times, serif; }
             .tik:hover { background-color: rgb(222, 222, 222); }
+
+            @media (max-width: 600px) {
+                #header-link h1 { font-size: 20px; }
+                #comm { font-size: 20px; }
+            }
         </style>
     </head>
     <body>
@@ -173,7 +179,11 @@
                 if (currentUserId) {
                     try {
                         const userRes = await fetch(`${API_BASE_URL}/api/users/${currentUserId}`);
-                        if (userRes.ok) { const dbUser = await userRes.json(); userRole = dbUser.role; }
+                        if (userRes.ok) { 
+                            const dbUserData = await userRes.json(); 
+                            const dbUser = dbUserData.user || dbUserData;
+                            userRole = dbUser.role; 
+                        }
                     } catch(err) { console.error('Role check error:', err); }
                 }
 
@@ -203,11 +213,12 @@
                     if (currentUserId) {
                         const checkRes = await fetch(`${API_BASE_URL}/api/quotes?userId=${currentUserId}`);
                         const allQuotes = await checkRes.json();
-                        const found = allQuotes.find(item => item.id == quoteId);
-                        
-                        if (found) {
-                            document.getElementById('heart').src = found.is_liked ? 'heart2.png' : 'heart.png';
-                            document.getElementById('rep').style.filter = found.is_reposted ? 'invert(48%) sepia(79%) saturate(417%) hue-rotate(86deg) brightness(98%) contrast(92%)' : 'none';
+                        if (Array.isArray(allQuotes)) {
+                            const found = allQuotes.find(item => item.id == quoteId);
+                            if (found) {
+                                document.getElementById('heart').src = found.is_liked ? 'heart2.png' : 'heart.png';
+                                document.getElementById('rep').style.filter = found.is_reposted ? 'invert(48%) sepia(79%) saturate(417%) hue-rotate(86deg) brightness(98%) contrast(92%)' : 'none';
+                            }
                         }
                     }
 
@@ -220,7 +231,7 @@
                             list.innerHTML += `
                                 <div class="comment-box">
                                     <div class="comment-user-info" onclick="window.location.href='accountpage.html?userId=${c.user_id}'">
-                                        <img src="${c.profile_pic || 'pngwing.com.png'}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover;">
+                                        <img src="${c.profile_pic || 'pngwing.com.png'}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
                                         <div>
                                             <b>${c.username} <span class="timestamp">• ${formatTimestamp(c.created_at)}</span></b>
                                             <p style="margin: 5px 0 0 0;">${c.content}</p>
